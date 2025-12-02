@@ -1,12 +1,16 @@
 package de.seuhd.campuscoffee.api.controller;
 
+import de.seuhd.campuscoffee.domain.model.User;
 import de.seuhd.campuscoffee.api.dtos.UserDto;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
+
 
 import static de.seuhd.campuscoffee.api.util.ControllerUtils.getLocation;
 
 import java.util.List;
+import de.seuhd.campuscoffee.api.exceptions.ErrorResponse;
 
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,8 +19,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.eclipse.persistence.jpa.rs.exceptions.ErrorResponse;
-import org.springframework.boot.autoconfigure.security.SecurityProperties.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +36,6 @@ import de.seuhd.campuscoffee.domain.ports.UserService;
 @Slf4j
 @RequiredArgsConstructor
 public class UserController {
-    //TODO: Implement user controller
     private final UserService userService;
     private final UserDtoMapper userDtoMapper;
 
@@ -52,11 +53,11 @@ public class UserController {
         }
     )
     @GetMapping("")
-    public ResponseEntity<List<UserDto>> getAllUsers() {
+    public ResponseEntity<List<UserDto>> getAll() {
         return ResponseEntity.ok(
             userService.getAll().stream()
                 .map(userDtoMapper::fromDomain)
-                .toList)
+                .toList()
         );
     }
 
@@ -105,7 +106,7 @@ public class UserController {
                                 schema = @Schema(implementation = ErrorResponse.class)
                         ),
                         description = "User not found."
-                ),
+                )
         }
 )
 
@@ -142,7 +143,7 @@ public class UserController {
     )
     @PostMapping("")
     public ResponseEntity<UserDto> create(
-        @RequestBody UserDto userDto) {
+        @RequestBody @Valid UserDto userDto) {
 
         UserDto created = upsert(userDto);
         return ResponseEntity
@@ -182,16 +183,16 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> update(
         @PathVariable Long id,
-        @RequestBody UserDto userDto) {
-        UserDto updated = upsert(
-            userDto.toBuilder().id(id).build()
-        );
-        return ResponseEntity.ok(updated);
+        @RequestBody @Valid UserDto userDto) {
+        
+        if (!id.equals(userDto.id())) {
+            throw new IllegalArgumentException("ID in path and request body must match.");
+        }   
+        return ResponseEntity.ok(upsert(userDto));
     }
-    private UserDto upsert(
-        UserDto userDto) {
-        var user = userDtoMapper.toDomain(userDto);
-        var savedUser = userService.upsert(user);
+    private UserDto upsert(UserDto userDto) {
+        User user = userDtoMapper.toDomain(userDto);
+        User savedUser = userService.upsert(user);
         return userDtoMapper.fromDomain(savedUser);
     }
 
