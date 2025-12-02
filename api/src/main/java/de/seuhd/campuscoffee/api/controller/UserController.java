@@ -149,3 +149,73 @@ public class UserController {
             .created(getLocation(created.id()))
             .body(created);
     }
+
+    @Operation(
+        summary = "Update an existing User.",
+        responses = {
+            @ApiResponse(
+                responseCode = "200",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = UserDto.class)
+                ),
+                description = "The updated User."
+            ),
+            @ApiResponse(
+                responseCode = "400",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                ),
+                description = "Invalid input data."
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                ),
+                description = "User not found."
+            )
+        }
+    )
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDto> update(
+        @PathVariable Long id,
+        @RequestBody UserDto userDto) {
+        UserDto updated = upsert(
+            userDto.toBuilder().id(id).build()
+        );
+        return ResponseEntity.ok(updated);
+    }
+    private UserDto upsert(
+        UserDto userDto) {
+        var user = userDtoMapper.toDomain(userDto);
+        var savedUser = userService.upsert(user);
+        return userDtoMapper.fromDomain(savedUser);
+    }
+
+    @Operation(
+        summary = "Delete a User by ID.",
+        responses = {
+            @ApiResponse(
+                responseCode = "204",
+                description = "User deleted successfully."
+            ),
+            @ApiResponse(
+                responseCode = "404",
+                content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+                ),
+                description = "User not found."
+            )
+        }
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+        @PathVariable Long id) {
+        userService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
