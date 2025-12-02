@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  *
  */
 @Builder(toBuilder = true)
-public record UserDto (
+public record UserDto( // Already implemented?
         @Nullable Long id, // id is null when creating a new user
         @Nullable LocalDateTime createdAt, // is null when using DTO to create a new user
         @Nullable LocalDateTime updatedAt, // is set when creating or updating a user
